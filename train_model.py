@@ -69,21 +69,33 @@ def main():
     parser.add_argument('--lr', help='learning rate for training')
     parser.add_argument('--training_path', help='dataset for training')
     parser.add_argument('--epochs', help='Number of epochs to train the model')
-
+    parser.add_argument('--validation_path', help='dataset for validation')
+    parser.add_argument('--checkpoint_directory', help='model checkpoint path')
     args = parser.parse_args()
-    lr = args.lr or 0.0001
-    batch_size = args.batch_size or 32
+    lr = float(args.lr) if args.lr else 0.0001
+    batch_size = int(args.batch_size) if args.batch_size else 32
     training_path = args.training_path or './DIQA_training'
-    epochs = args.epochs or 5
+    epochs = int(args.epochs) if args.epochs else 5
     optimizer = optimizers.Adam(lr=lr)
     training_generator = DataGenerator(training_path, batch_size)
+    validation_generator = None
+    validation_steps = None
+    if args.validation_path:
+        validation_generator = DataGenerator(args.validation_path, batch_size)
+        validation_steps = validation_generator.nb_batch
     model = build_model()
     print(model.summary())
     model.compile(optimizer=optimizer, loss='mse', metrics=['mse', 'mae'])
-    checkpoint_path = './checkpoints/cnn-{epoch:02d}-{loss:.4f}.h5'
-    checkpoint_cb = callbacks.ModelCheckpoint(checkpoint_path, monitor='loss', save_best_only=True)
+    checkpoint_directory = args.checkpoint_directory or  './checkpoints'
+    checkpoint_path = os.path.join(checkpoint_directory, 'cnn-{epoch:02d}-mse-{val_loss:.4f}.h5')
+    checkpoint_cb = callbacks.ModelCheckpoint(checkpoint_path, monitor='val_loss', save_best_only=True)
     cb_list = [checkpoint_cb]
-    model.fit_generator(training_generator, steps_per_epoch=training_generator.nb_batch, epochs=epochs, callbacks=cb_list)
+    model.fit_generator(training_generator, 
+                        steps_per_epoch=training_generator.nb_batch, 
+                        epochs=epochs,
+                        validation_steps=validation_steps,
+                        validation_data=validation_generator,
+                        callbacks=cb_list)
 
 if __name__ == '__main__':
     main()

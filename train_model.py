@@ -71,6 +71,7 @@ def main():
     parser.add_argument('--epochs', help='Number of epochs to train the model')
     parser.add_argument('--validation_path', help='dataset for validation')
     parser.add_argument('--checkpoint_directory', help='model checkpoint path')
+    parser.add_argument('--save_best_only', help='only save best model checkpoint path')
     args = parser.parse_args()
     lr = float(args.lr) if args.lr else 0.0001
     batch_size = int(args.batch_size) if args.batch_size else 32
@@ -88,7 +89,12 @@ def main():
     model.compile(optimizer=optimizer, loss='mse', metrics=['mse', 'mae'])
     checkpoint_directory = args.checkpoint_directory or  './checkpoints'
     checkpoint_path = os.path.join(checkpoint_directory, 'cnn-{epoch:02d}-mse-{val_loss:.4f}.h5')
-    checkpoint_cb = callbacks.ModelCheckpoint(checkpoint_path, monitor='val_loss', save_best_only=True)
+    save_best_only = args.save_best_only
+    if not save_best_only or save_best_only == 'false':
+        save_best_only = False
+    else:
+        save_best_only = True
+    checkpoint_cb = callbacks.ModelCheckpoint(checkpoint_path, monitor='val_loss', save_best_only=save_best_only)
     cb_list = [checkpoint_cb]
     model.fit_generator(training_generator, 
                         steps_per_epoch=training_generator.nb_batch, 

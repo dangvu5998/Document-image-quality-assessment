@@ -4,35 +4,15 @@ from random import shuffle
 import numpy as np
 import imageio
 import pandas as pd
-import keras as K
+from keras import backend as K
 from keras.models import load_model, Model, Sequential
-from keras import layers, optimizers, callbacks
-import tensorflow as tf
+from keras import optimizers, callbacks
 from .utils import image_normalize
+from .models import build_cnn_model, build_cnn_model2
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 pretrained_directory = os.path.join(dir_path, 'pretrained')
 model_path = None
-
-def build_model():
-    model = Sequential()
-    model.add(layers.Conv2D(filters=40, kernel_size=(5, 5), padding='valid', input_shape=(48, 48, 1)))
-    model.add(layers.MaxPooling2D(pool_size=(4, 4)))
-    model.add(layers.Conv2D(filters=80, kernel_size=(5, 5), padding='valid'))
-    def min_max_pool2d(x):
-        max_x = K.backend.max(K.backend.max(x, axis=1), axis=1)
-        min_x = K.backend.min(K.backend.min(x, axis=1), axis=1)
-        return K.backend.concatenate([max_x, min_x]) # concatenate on channel
-
-    def min_max_pool2d_output_shape(input_shape):
-        return (None, input_shape[-1]*2)
-
-    # replace maxpooling layer
-    model.add(layers.Lambda(min_max_pool2d, output_shape=min_max_pool2d_output_shape))
-    model.add(layers.Dense(1024, activation='relu'))
-    model.add(layers.Dense(1024, activation='relu'))
-    model.add(layers.Dense(1, activation='relu'))
-    return model
 
 class DataGenerator:
     def __init__(self, data_path, batch_size=32):
@@ -84,11 +64,11 @@ def main():
     if args.validation_path:
         validation_generator = DataGenerator(args.validation_path, batch_size)
         validation_steps = validation_generator.nb_batch
-    model = build_model()
+    model = build_cnn_model2()
     print(model.summary())
-    model.compile(optimizer=optimizer, loss='mse', metrics=['mse', 'mae'])
+    model.compile(optimizer=optimizer, loss='mae', metrics=['mae'])
     checkpoint_directory = args.checkpoint_directory or  './checkpoints'
-    checkpoint_path = os.path.join(checkpoint_directory, 'cnn-{epoch:02d}-mse-{val_loss:.4f}.h5')
+    checkpoint_path = os.path.join(checkpoint_directory, 'cnn1-{epoch:02d}-mae-{val_loss:.3f}.h5')
     save_best_only = args.save_best_only
     if not save_best_only or save_best_only == 'false':
         save_best_only = False
@@ -96,7 +76,7 @@ def main():
         save_best_only = True
     checkpoint_cb = callbacks.ModelCheckpoint(checkpoint_path, monitor='val_loss', save_best_only=save_best_only)
     cb_list = [checkpoint_cb]
-    model.fit_generator(training_generator, 
+    model.fit_generator(training_generator,
                         steps_per_epoch=training_generator.nb_batch, 
                         epochs=epochs,
                         validation_steps=validation_steps,

@@ -34,10 +34,10 @@ def order_points(pts):
     # bottom-right, and bottom-left order
     return np.array([tl, tr, br, bl], dtype="float32")
 
-def four_point_transform(image, pts):
+def four_point_transform(image, corners):
     # obtain a consistent order of the points and unpack them
     # individually
-    rect = order_points(pts)
+    rect = order_points(corners)
     (tl, tr, br, bl) = rect
 
     # compute the width of the new image, which will be the
@@ -108,7 +108,7 @@ def get_document_corners(img, img_type='BGR'):
     simplified_cnts = sorted(simplified_cnts, key=cv2.contourArea, reverse=True)
     area_th = cv2.contourArea(simplified_cnts[0])/5
     corners = None
-    for i in range(1,5):
+    for i in range(1,min(5, len(simplified_cnts))):
         cnt = simplified_cnts[i].reshape(-1, 2)
         if cv2.contourArea(cnt) < area_th:
             break
@@ -143,8 +143,8 @@ def get_datasets(first_part_path, second_part_path):
             if split_item[1].lower() == '.jpg':
                 image_paths.append(os.path.join(first_part_path, doc, split_item[0] + split_item[1]))
                 eval_paths.append(os.path.join(first_part_path, doc, 'eval_' + split_item[0] + '.txt'))
+    second_part_path = os.path.join(second_part_path, 'FineReader')
     second_sets = os.listdir(second_part_path)
-
     for doc in second_sets:
         if doc[:3] == 'set':
             files = os.listdir(os.path.join(second_part_path, doc))
@@ -154,28 +154,10 @@ def get_datasets(first_part_path, second_part_path):
                     image_paths.append(os.path.join(second_part_path, doc, split_item[0] + split_item[1]))
                     eval_paths.append(os.path.join(second_part_path, doc, 'eval_' + split_item[0] + '.txt'))
 
-    num_docs = len(image_paths)
-    indices = list(range(num_docs))
-    # random.seed(3796)
-    random.shuffle(indices)
+    return image_paths, eval_paths
 
-    shuffled_indices = np.array(indices)
-    shuffled_image_paths = np.array(image_paths)[shuffled_indices]
-    shuffled_eval_paths = np.array(eval_paths)[shuffled_indices]
-
-    num_one_fold = num_docs // 5
-    training_image_paths = shuffled_image_paths[:num_one_fold * 3]
-    training_eval_paths = shuffled_eval_paths[:num_one_fold * 3]
-
-    validation_image_paths = shuffled_image_paths[num_one_fold * 3:num_one_fold * 3 + num_one_fold]
-    validation_eval_paths = shuffled_eval_paths[num_one_fold * 3:num_one_fold * 3 + num_one_fold]
-
-    test_image_paths = shuffled_image_paths[num_one_fold * 4:]
-    test_eval_paths = shuffled_eval_paths[num_one_fold * 4:]
-
-    return training_image_paths, training_eval_paths, validation_image_paths, validation_eval_paths, test_image_paths, test_eval_paths
-
-def generate_patches(img, patch_size=(48, 48), img_type='RGB'):
+def generate_patches(img, patch_size=(48, 48), img_type='RGB', blank_threshold=1.0,
+                     row_step=None, col_step=None):
     corners = get_document_corners(img, img_type)
     img = four_point_transform(img, corners)
     if img_type == 'BGR':
@@ -184,20 +166,29 @@ def generate_patches(img, patch_size=(48, 48), img_type='RGB'):
         gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     elif img_type == 'GRAY':
         gray_img = img
-    ret, th = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    # ret, th = cv2.threshold(cv2.medianBlur(gray_img, 5), 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    th = cv2.adaptiveThreshold(gray_img, 255, \
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
+    th = cv2.medianBlur(th, 7)
     patches = []
     rows, cols = gray_img.shape
-    skip_patches_rows = int(patch_size[1]/3)
-    skip_pathces_cols = int(patch_size[0]/3)
-    for i in range(0, rows-patch_size[1], skip_patches_rows):
-        for j in range(0, cols-patch_size[0], skip_pathces_cols):
-            if not is_constant(th[i:i+patch_size[1], j:j+patch_size[0]]):
+    if row_step is None:
+        row_step = int(patch_size[1]/3)
+    if col_step is None:
+        col_step = int(patch_size[0]/3)
+    for i in range(0, rows-patch_size[1], row_step):
+        for j in range(0, cols-patch_size[0], col_step):
+            if not is_blank(th[i:i+patch_size[1], j:j+patch_size[0]], blank_threshold=blank_threshold):
                 patches.append(gray_img[i:i+patch_size[1], j:j+patch_size[0]])
     return patches
 
-def is_constant(patch):
-    compare_matrix = patch == patch[0, 0]
-    return np.all(compare_matrix)
+def is_blank(patch, blank_threshold=1.0):
+    compare_matrix = patch == 255
+    if blank_threshold >= 1:
+        return np.all(compare_matrix)
+    else:
+        blank_ratio = np.count_nonzero(compare_matrix)/compare_matrix.size
+        return blank_ratio >= blank_threshold or blank_ratio <= 1 - blank_threshold
 
 def image_normalize(x):
     x = x.astype(np.float32)
@@ -215,7 +206,6 @@ def generate_patches_dataset(img_paths, eval_paths, dist):
     img_directory_path = os.path.join(dist, 'img')
     os.makedirs(img_directory_path)
     labels_file = open(os.path.join(dist, 'labels.txt'), 'w')
-    labels_file.write('Image\tScore\n')
     index = 0
     for i in range(len(img_paths)):
         print('{}/{}'.format(i, len(img_paths)))

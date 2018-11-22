@@ -4,6 +4,7 @@ from random import shuffle
 import numpy as np
 import imageio
 import pandas as pd
+import keras
 from keras import backend as K
 from keras.models import load_model, Model, Sequential
 from keras import optimizers, callbacks
@@ -52,7 +53,9 @@ def main():
     parser.add_argument('--validation_path', help='dataset for validation')
     parser.add_argument('--checkpoint_directory', help='model checkpoint path')
     parser.add_argument('--save_best_only', help='only save best model checkpoint path')
+    parser.add_argument('--graph_log', help='graph log dir for tensorboard')
     args = parser.parse_args()
+    graph_log = args.graph_log or './graph_log'
     lr = float(args.lr) if args.lr else 0.0001
     batch_size = int(args.batch_size) if args.batch_size else 32
     training_path = args.training_path or './DIQA_training'
@@ -74,8 +77,9 @@ def main():
         save_best_only = False
     else:
         save_best_only = True
+    tbCallBack = keras.callbacks.TensorBoard(log_dir=graph_log, write_images=True)
     checkpoint_cb = callbacks.ModelCheckpoint(checkpoint_path, monitor='val_loss', save_best_only=save_best_only)
-    cb_list = [checkpoint_cb]
+    cb_list = [checkpoint_cb, tbCallBack]
     model.fit_generator(training_generator,
                         steps_per_epoch=training_generator.nb_batch, 
                         epochs=epochs,

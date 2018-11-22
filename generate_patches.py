@@ -7,10 +7,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--metadata_path', help='File contains images path and score')
     parser.add_argument('--dist', help='Destination directory for data')
-    parser.add_argument('--width_patch', help='Width of patches')
-    parser.add_argument('--height_patch', help='Height of patches')
     parser.add_argument('--data_path', help='Data directory path')
+    parser.add_argument('--blank_threshold', help='Threshold blank of patches')
     args = parser.parse_args()
+    blank_threshold = args.blank_threshold or 0.95
+    blank_threshold = float(blank_threshold)
     dist = args.dist
     data_path = args.data_path
     img_directory_path = os.path.join(dist, 'img')
@@ -28,7 +29,7 @@ def main():
         img = cv2.imread(img_path)
         corners = get_document_corners(img, img_type='BGR')
         img = four_point_transform(img, corners)
-        patches = generate_patches(img, img_type='BGR', blank_threshold=0.9)
+        patches = generate_patches(img, img_type='BGR', blank_threshold=blank_threshold)
         for patch in patches:
             filename = 'img_{}.jpg'.format(index)
             cv2.imwrite(

@@ -68,7 +68,7 @@ def main():
     print(model.summary())
     model.compile(optimizer=optimizer, loss='mae', metrics=['mae'])
     checkpoint_directory = args.checkpoint_directory or  './checkpoints'
-    checkpoint_path = os.path.join(checkpoint_directory, 'cnn1-{epoch:02d}-mae-{val_loss:.3f}.h5')
+    checkpoint_path = os.path.join(checkpoint_directory, 'cnn2-{epoch:02d}-mae-{val_loss:.3f}.h5')
     save_best_only = args.save_best_only
     if not save_best_only or save_best_only == 'false':
         save_best_only = False

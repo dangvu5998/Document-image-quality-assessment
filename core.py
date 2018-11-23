@@ -22,7 +22,7 @@ class DIQA:
                                    row_step=48)
         patches_normalized = np.asarray(list(map(image_normalize, patches)))
         score = np.mean(self.model.predict(patches_normalized))
-        return score, img, patches
+        return score
 
     def assessment(self, img, threshold=0.8, document_crop=True, img_type='RGB'):
         if document_crop == True:
@@ -51,7 +51,6 @@ class DIQA:
                     document_check_count += 1
                     quality = np.mean(self.model.predict(patches_normalized))
                     ret[i, j] = quality
-        # print(ret)
         return document_check_count >= 5 and np.all(ret > threshold), ret
 
 class DIQA2:
@@ -72,6 +71,5 @@ class DIQA2:
                                    col_step=48,
                                    row_step=48)
         patches_normalized = np.asarray(list(map(image_normalize, patches)))
-        print(len(patches_normalized))
         score = np.mean(self.model.predict(patches_normalized))
         return score

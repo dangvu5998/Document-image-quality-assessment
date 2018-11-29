@@ -3,7 +3,6 @@ import random
 import cv2
 import numpy as np
 import math
-# import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.spatial import distance as dist
 
@@ -166,10 +165,8 @@ def generate_patches(img, patch_size=(48, 48), img_type='RGB', blank_threshold=1
         gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     elif img_type == 'GRAY':
         gray_img = img
-    # ret, th = cv2.threshold(cv2.medianBlur(gray_img, 5), 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-    th = cv2.adaptiveThreshold(gray_img, 255, \
-        cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,2)
-    th = cv2.medianBlur(th, 7)
+    th = cv2.adaptiveThreshold(cv2.medianBlur(gray_img, 31), 255, \
+        cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,31,2)
     patches = []
     rows, cols = gray_img.shape
     if row_step is None:

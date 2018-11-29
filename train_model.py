@@ -54,8 +54,10 @@ def main():
     parser.add_argument('--checkpoint_directory', help='model checkpoint path')
     parser.add_argument('--save_best_only', help='only save best model checkpoint path')
     parser.add_argument('--graph_log', help='graph log dir for tensorboard')
+    parser.add_argument('--info_log', help='graph log dir for tensorboard')
     args = parser.parse_args()
     graph_log = args.graph_log or './graph_log'
+    info_log = args.info_log or './info_log.log'
     lr = float(args.lr) if args.lr else 0.0001
     batch_size = int(args.batch_size) if args.batch_size else 32
     training_path = args.training_path or './DIQA_training'
@@ -77,9 +79,10 @@ def main():
         save_best_only = False
     else:
         save_best_only = True
-    tbCallBack = keras.callbacks.TensorBoard(log_dir=graph_log, write_images=True)
+    tb_cb = keras.callbacks.TensorBoard(log_dir=graph_log, write_images=True)
     checkpoint_cb = callbacks.ModelCheckpoint(checkpoint_path, monitor='val_loss', save_best_only=save_best_only)
-    cb_list = [checkpoint_cb, tbCallBack]
+    csv_logger_cb = keras.callbacks.CSVLogger(info_log)
+    cb_list = [checkpoint_cb, tb_cb, csv_logger_cb]
     model.fit_generator(training_generator,
                         steps_per_epoch=training_generator.nb_batch, 
                         epochs=epochs,

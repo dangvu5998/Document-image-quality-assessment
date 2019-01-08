@@ -3,6 +3,46 @@ import os
 import numpy as np
 from .utils import get_datasets, get_score_from_eval
 
+def get_score_from_eval(filename):
+    '''
+    Get score quality document image from metadata file in SOC dataset
+    '''
+    with open(filename, 'rb') as infile:
+        lines = [line for line in infile][:4]
+    return float(lines[3].split()[0][:-1]) / 100
+
+def get_datasets(first_part_path, second_part_path):
+    '''
+    Get image paths and evaluate paths from SOC dataset
+    '''
+    first_sets = os.listdir(first_part_path)
+    image_paths = []
+    eval_paths = []
+
+    for doc in first_sets:
+        files = os.listdir(os.path.join(first_part_path, doc))
+        for item in files:
+            split_item = os.path.splitext(item)
+            if split_item[1].lower() == '.jpg':
+                image_paths.append(os.path.join(first_part_path, doc,
+                                                split_item[0] + split_item[1]))
+                eval_paths.append(os.path.join(first_part_path, doc,
+                                               'eval_' + split_item[0] + '.txt'))
+    second_part_path = os.path.join(second_part_path, 'FineReader')
+    second_sets = os.listdir(second_part_path)
+    for doc in second_sets:
+        if doc[:3] == 'set':
+            files = os.listdir(os.path.join(second_part_path, doc))
+            for item in files:
+                split_item = os.path.splitext(item)
+                if split_item[1].lower() == '.jpg':
+                    image_paths.append(os.path.join(second_part_path,
+                                                    doc, split_item[0] + split_item[1]))
+                    eval_paths.append(os.path.join(second_part_path, doc,
+                                                   'eval_' + split_item[0] + '.txt'))
+
+    return image_paths, eval_paths
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dist_path', help='Destination directory for split')

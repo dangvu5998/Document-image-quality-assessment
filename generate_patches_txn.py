@@ -14,12 +14,12 @@ def main():
     blank_threshold = float(blank_threshold)
     dist = args.dist
     data_path = args.data_path
-    img_directory_path = os.path.join(dist, 'images')
+    img_directory_path = os.path.join(dist, 'img')
     os.makedirs(img_directory_path)
     labels_file = open(os.path.join(dist, 'labels.txt'), 'w')
-    patchlabels_file = open(args.metadata_path)
+    metadata_file = open(args.metadata_path)
     index = 0
-    for line in patchlabels_file:
+    for line in metadata_file:
         line = line.strip()
         if len(line) == 0:
             break
@@ -27,9 +27,10 @@ def main():
         img_path = os.path.join(data_path, img_path)
         print('Generating: ', img_path)
         img = cv2.imread(img_path)
-        corners = get_document_corners(img, img_type='BGR')
-        img = four_point_transform(img, corners)
-        patches = generate_patches(img, img_type='BGR', blank_threshold=blank_threshold)
+        patches = generate_patches(img, 
+            img_type='BGR',
+            blank_threshold=blank_threshold,
+            document_crop=False)
         for patch in patches:
             filename = 'img_{}.jpg'.format(index)
             cv2.imwrite(
@@ -39,7 +40,7 @@ def main():
             index += 1
         print('Generate {} patches'.format(len(patches)))
     labels_file.close()
-    patchlabels_file.close()
+    metadata_file.close()
 
 if __name__ == '__main__':
     main()

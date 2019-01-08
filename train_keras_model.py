@@ -1,21 +1,25 @@
+'''
+Train cnn model for document image assessment
+'''
+
 import os
 import argparse
 from random import shuffle
 import numpy as np
 import imageio
-import pandas as pd
-import keras
-from keras import backend as K
-from keras.models import load_model, Model, Sequential
-from keras import optimizers, callbacks
+from tensorflow import keras
+from tensorflow.keras import optimizers, callbacks
 from .utils import image_normalize
-from .models import build_cnn_model, build_cnn_model2
+from .models import build_cnn_model
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-pretrained_directory = os.path.join(dir_path, 'pretrained')
+DIR_PATH = os.path.dirname(os.path.realpath(__file__))
+pretrained_directory = os.path.join(DIR_PATH, 'pretrained')
 model_path = None
 
 class DataGenerator:
+    '''
+    Generator for fit_generator keras
+    '''
     def __init__(self, data_path, batch_size=32):
         self.data_path = data_path
         labels_file = open(os.path.join(data_path, 'labels.txt'), 'r')
@@ -35,7 +39,7 @@ class DataGenerator:
         labels = []
         for i in range(self.curr_batch*self.batch_size, (self.curr_batch+1)*self.batch_size):
             img_filename, score = self.lines[i].split('\t')
-            img_path = os.path.join(self.data_path, 'img', img_filename)
+            img_path = os.path.join(self.data_path, 'images', img_filename)
             score = float(score)
             image = imageio.imread(img_path)
             image = image_normalize(image)
@@ -45,6 +49,9 @@ class DataGenerator:
         return np.asarray(images), np.asarray(labels)
 
 def main():
+    '''
+    Main training model
+    '''
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', help='batch size for data generator')
     parser.add_argument('--lr', help='learning rate for training')
@@ -69,7 +76,7 @@ def main():
     if args.validation_path:
         validation_generator = DataGenerator(args.validation_path, batch_size)
         validation_steps = validation_generator.nb_batch
-    model = build_cnn_model2()
+    model = build_cnn_model()
     print(model.summary())
     model.compile(optimizer=optimizer, loss='mae', metrics=['mae'])
     checkpoint_directory = args.checkpoint_directory or  './checkpoints'
@@ -80,11 +87,12 @@ def main():
     else:
         save_best_only = True
     tb_cb = keras.callbacks.TensorBoard(log_dir=graph_log, write_images=True)
-    checkpoint_cb = callbacks.ModelCheckpoint(checkpoint_path, monitor='val_loss', save_best_only=save_best_only)
+    checkpoint_cb = callbacks.ModelCheckpoint(checkpoint_path, monitor='val_loss',
+                                              save_best_only=save_best_only)
     csv_logger_cb = keras.callbacks.CSVLogger(info_log)
     cb_list = [checkpoint_cb, tb_cb, csv_logger_cb]
     model.fit_generator(training_generator,
-                        steps_per_epoch=training_generator.nb_batch, 
+                        steps_per_epoch=training_generator.nb_batch,
                         epochs=epochs,
                         validation_steps=validation_steps,
                         validation_data=validation_generator,

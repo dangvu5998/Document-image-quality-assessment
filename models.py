@@ -32,7 +32,7 @@ def cnn_model_fn(features, labels, mode):
 
     conv1 = tf.layers.conv2d(
         inputs=input_layer,
-        filter=40,
+        filters=40,
         kernel_size=[5, 5],
         padding='valid'
     )
@@ -50,8 +50,9 @@ def cnn_model_fn(features, labels, mode):
     min_pool2 = tf.reduce_min(tf.reduce_min(conv2, axis=1), axis=1)
     minmax_pool = tf.concat([max_pool2, min_pool2], axis=1)
     dense1 = tf.layers.dense(minmax_pool, 1024, activation=tf.nn.relu)
-    dense2 = tf.layers.dense(dense2, 1024, activation=tf.nn.relu)
+    dense2 = tf.layers.dense(dense1, 1024, activation=tf.nn.relu)
     output = tf.layers.dense(dense2, 1)
+    output = tf.squeeze(output)
 
     predictions = {
         'quality': output

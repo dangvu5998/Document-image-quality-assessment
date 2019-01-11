@@ -27,6 +27,8 @@ def main():
         img_path = os.path.join(data_path, img_path)
         print('Generating: ', img_path)
         img = cv2.imread(img_path)
+        document_size = (1800, 2500)
+        img = cv2.resize(img, document_size)
         patches = generate_patches(img, 
             img_type='BGR',
             blank_threshold=blank_threshold,

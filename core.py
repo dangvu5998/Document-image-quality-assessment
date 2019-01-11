@@ -6,7 +6,7 @@ import cv2
 from .models import build_cnn_model
 from .utils import get_document_corners, generate_patches, four_point_transform, image_normalize
 
-class DIQA2:
+class DIQA:
     '''
     Document Image Quality Assessment
     Model version 2
@@ -39,8 +39,8 @@ class DIQA2:
             corners = get_document_corners(img, img_type=img_type)
             img = four_point_transform(img, corners)
 
-        scale = 1820/img.shape[1]
-        img = cv2.resize(img, (0, 0), fx=scale, fy=scale)
+        document_size = (1800, 2500)
+        img = cv2.resize(img, document_size)
         img = img[200:-200, 200:-200]
         # break document into samples for assessment
         img_height, img_width = img.shape[:2]

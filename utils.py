@@ -157,8 +157,8 @@ def generate_patches(img, patch_size=(48, 48), img_type='RGB', blank_threshold=1
         gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     elif img_type == 'GRAY':
         gray_img = img
-    document_size = (1800, 2500)
-    gray_img = cv2.resize(gray_img, document_size)
+    # document_size = (1800, 2500)
+    # gray_img = cv2.resize(gray_img, document_size)
     blur_img = cv2.medianBlur(gray_img, 15)
     thres = cv2.adaptiveThreshold(blur_img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 15, 2)
     patches = []

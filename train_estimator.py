@@ -59,10 +59,10 @@ def main():
     # log.addHandler(file_logger)
     train_image_paths, train_labels = read_metadata_dataset(training_path)
     val_image_paths, val_labels = read_metadata_dataset(validation_path)
-    train_image_paths = train_image_paths[:100]
-    train_labels = train_labels[:100]
-    val_image_paths = val_image_paths[:100]
-    val_labels = val_labels[:100]
+    # train_image_paths = train_image_paths[:100]
+    # train_labels = train_labels[:100]
+    # val_image_paths = val_image_paths[:100]
+    # val_labels = val_labels[:100]
     classifier = tf.estimator.Estimator(cnn_model_fn, model_dir=checkpoint_dir)
 
     for epoch in range(epochs):

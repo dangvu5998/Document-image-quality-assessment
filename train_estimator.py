@@ -16,7 +16,7 @@ def data_input_fn(image_paths, labels, batch_size):
         image = tf.multiply(tf.subtract(image_decoded, 128), 1/128)
         return image_decoded, label
 
-    return dataset.shuffle(1000).map(_parse_image).batch(batch_size)
+    return dataset.shuffle(50000).map(_parse_image).batch(batch_size)
 
 def read_metadata_dataset(data_path, is_shuffle=True):
     image_paths = []
